@@ -5,11 +5,12 @@ from langchain_core.messages import HumanMessage, AIMessage
 llm = OllamaLLM(model="llama3.1")
 
 # PIC: Oscar
-def SpeechToTextAgent(audio) -> str:
+def SpeechToTextAgent(audio, input_language: str) -> str:
     """a function that listen to the user, and convert the speech to text
 
     Args:
-        inputAudio (_type_): user prompt audio (type to be identified)
+        audio (_type_): user prompt audio (type to be identified)
+        input_language (str): "EN" for english, "YUE" for Cantonese, "CN" for Mandarin
 
     Returns:
         str: textual representation of the speech
@@ -20,44 +21,63 @@ def SpeechToTextAgent(audio) -> str:
 
 
 # PIC: Oscar
-def TextToSpeechAgent(outputText: str) -> None:
+def TextToSpeechAgent(outputText: str, input_language: str) -> None:
     """a function that say out the generated response
 
     Args:
         outputText (str): textual representation of the expected output
+        input_language (str): "EN" for english, "YUE" for Cantonese, "CN" for Mandarin
     """
     return
 
 
 # PIC: Ron
-def ThreatDetectionAgent(inputText: str) -> bool:
+def ThreatDetectionAgent(text: str) -> bool:
     """a function that detect whether the user has suicidal thoughts / experienced bullying / harrassment
 
     Args:
-        inputText (str): user prompt
+        text (str): user prompt
 
     Returns:
         bool: flag indicating if the user is facing any threat 
     """
+    system_message = "你是一個翻譯員。你的職責是將輸入的英語原句翻譯成廣東話。"
+
+    prompt_template = ChatPromptTemplate.from_messages(
+        [
+            ("system", "{system_message}"),
+            ("human", "{text}")
+        ]
+    )
+    chain = prompt_template | llm
+    response = chain.invoke(
+        input={"system_message": system_message, "text": f"'{text}'"})
 
     return False
 
 
 # PIC: Ron
-def TranslatorAgent(text: str, output_language: str) -> str:
+def TranslatorAgent(text: str, input_language: str = "", output_language: str = "") -> str:
     """a function that translate between Cantonese and English
 
     Args:
         text (str): target content
-        output_language (str): "CAN" for Cantonese, "ENG" for english
+        input_language (str): "EN" for english, "YUE" for Cantonese, "CN" for Mandarin
+        output_language (str): "EN" for english, "YUE" for Cantonese, "CN" for Mandarin
 
     Returns:
         str: translated text
     """
-    if output_language == "CAN":
-        system_message = "你是一個翻譯員。你的職責是將輸入的英語原句翻譯成廣東話。"
-    elif output_language == "ENG":
+    if input_language == "EN" or output_language == "EN":
+        return text
+    elif input_language == "YUE":
         system_message = "Your role is to translate Cantonese text to English accurately. Translate the provided phrase only without extra notes. Indicate unclear inputs with 'ERROR: I don't understand' only. You are expected not to show the thinking process."
+    elif input_language == "CN":
+        system_message = ""
+    elif output_language == "YUE":
+        system_message = "你是一個翻譯員。你的職責是將輸入的英語原句翻譯成廣東話。"
+    elif output_language == "CN":
+        system_message = ""
     else:
         raise ValueError()
 
@@ -119,13 +139,21 @@ def thirdPartyBlackBox(inputText: str = None, inputAudio=None) -> str:
 def main():
     chat_history = list()
     is_danger = False
+    
+    print("Welcome to the program. Please select a language to start with: (1)English, (2)Cantonese, (3)Mandarin")
+    print("歡迎嚟到呢個程式，請選擇語言：（1）英文，（2）廣東話，（3）普通話")
+    print("欢迎来到这个程式，请选择语言：（1）英语，（2）广东话，（3）普通话")
+    language = {'1': 'EN', '2': 'YUE', '3': 'CN'}.get(input(">> "))
+    if not language:
+        raise ValueError()
+    
     while True:
         audio = ""
         if is_danger:
             rawOutput = thirdPartyBlackBox(inputAudio=audio)
         else:
-            rawInput = SpeechToTextAgent(audio)
-            translatedInput = TranslatorAgent(text=rawInput, output_language="ENG")
+            rawInput = SpeechToTextAgent(audio, input_language=language)
+            translatedInput = TranslatorAgent(text=rawInput, input_language=language)
             print("translated: " + translatedInput)
             is_danger = ThreatDetectionAgent(translatedInput)
             if is_danger:
@@ -133,8 +161,8 @@ def main():
             else:
                 rawOutput, chat_history = ResponseAgent(translatedInput, chat_history)
             print("rawOutput: " + rawOutput)
-            translatedOutput = TranslatorAgent(text=rawOutput, output_language="CAN")
-        TextToSpeechAgent(translatedOutput)
+            translatedOutput = TranslatorAgent(text=rawOutput, output_language=language)
+        TextToSpeechAgent(translatedOutput, input_language=language)
         print("assistant: " + translatedOutput)
         print()
 
