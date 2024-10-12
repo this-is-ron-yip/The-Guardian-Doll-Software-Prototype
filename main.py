@@ -1,6 +1,7 @@
 from langchain_ollama.llms import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
+from deep_translator import (GoogleTranslator)
 
 llm = OllamaLLM(model="llama3.1")
 
@@ -57,7 +58,7 @@ def ThreatDetectionAgent(text: str) -> bool:
 
 
 # PIC: Ron
-def TranslatorAgent(text: str, input_language: str = "", output_language: str = "") -> str:
+def TranslatorAgent(text: str, input_language: str = "EN", output_language: str = "EN") -> str:
     """a function that translate between Cantonese and English
 
     Args:
@@ -68,29 +69,36 @@ def TranslatorAgent(text: str, input_language: str = "", output_language: str = 
     Returns:
         str: translated text
     """
-    if input_language == "EN" or output_language == "EN":
-        return text
-    elif input_language == "YUE":
-        system_message = "Your role is to translate Cantonese text to English accurately. Translate the provided phrase only without extra notes. Indicate unclear inputs with 'ERROR: I don't understand' only. You are expected not to show the thinking process."
-    elif input_language == "CN":
-        system_message = ""
-    elif output_language == "YUE":
-        system_message = "你是一個翻譯員。你的職責是將輸入的英語原句翻譯成廣東話。"
-    elif output_language == "CN":
-        system_message = ""
-    else:
-        raise ValueError()
+    language_code = {"EN": "en", "YUE": "zh-CN", "CN": "zh-CN"}
 
-    prompt_template = ChatPromptTemplate.from_messages(
-        [
-            ("system", "{system_message}"),
-            ("human", "{text}")
-        ]
-    )
-    chain = prompt_template | llm
-    response = chain.invoke(input={"system_message": system_message, "text": f"'{text}'"})
+    if input_language == "YUE":
+        prompt_template = ChatPromptTemplate.from_messages(
+            [
+                ("system", "請將廣東話口語翻譯成書面語，請不要添加額外句子"),
+                ("human", "{text}")
+            ]
+        )
+        chain = prompt_template | llm
+        text = chain.invoke({"text": text})
+        print("cantonese: " + text)
 
-    return response
+    text = GoogleTranslator(
+        source=language_code[input_language], 
+        target=language_code[output_language]).translate(text)
+
+
+    if output_language == "YUE":
+        prompt_template = ChatPromptTemplate.from_messages(
+            [
+                ("system", "請將書面語翻譯成廣東話口語，請不要添加額外句子"),
+                ("human", "{text}")
+            ]
+        )
+        chain = prompt_template | llm
+        print("cantonese before: " + text)
+        text = chain.invoke({"text": text})
+
+    return text
 
 
 # PIC: Ron
