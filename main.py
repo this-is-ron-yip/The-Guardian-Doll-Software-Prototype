@@ -42,7 +42,7 @@ def ThreatDetectionAgent(text: str) -> bool:
     Returns:
         bool: flag indicating if the user is facing any threat 
     """
-    system_message = "你是一個翻譯員。你的職責是將輸入的英語原句翻譯成廣東話。"
+    system_message = "You are a threat detector for individuals with intellectual disabilities or autism. If you receive user prompt that may directly or indirectly contain emotional distress, violence, sexual-content and self-harm implications, reply 'DANGER' only. otherwise respond 'SAFE' only. You do not have the third option. Categorize as DANGER for marginal case"
 
     prompt_template = ChatPromptTemplate.from_messages(
         [
@@ -53,7 +53,24 @@ def ThreatDetectionAgent(text: str) -> bool:
     chain = prompt_template | llm
     response = chain.invoke(
         input={"system_message": system_message, "text": f"'{text}'"})
+    
+    print(f"threat: {response}")
+    if "DANGER" in response:
+        return True
+    else:
+        system_message = "You are analysing the AI-generated response. If the response is a suicide prevention message, or mentioned about cannot create content related to harrassement, violence, danger or sexual-content, or about cannot engagereply 'DANGER' only, else reply 'SAFE' only"
 
+        prompt_template = ChatPromptTemplate.from_messages(
+            [
+                ("system", "{system_message}"),
+                ("human", "{text}")
+            ]
+        )
+        chain = prompt_template | llm
+        response = chain.invoke(input={"system_message": system_message, "text": f"'{response}'"})
+        print(f"suicidal: {response}")
+        if "DANGER" in response:
+            return True
     return False
 
 
