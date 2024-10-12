@@ -176,6 +176,7 @@ def main():
         audio = ""
         if is_danger:
             rawOutput = thirdPartyBlackBox(inputAudio=audio)
+            is_danger = False
         else:
             rawInput = SpeechToTextAgent(audio, input_language=language)
             translatedInput = TranslatorAgent(text=rawInput, input_language=language)
