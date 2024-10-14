@@ -2,6 +2,15 @@ from langchain_ollama.llms import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
 from deep_translator import (GoogleTranslator)
+#Blackbox
+from telegram import Bot
+import os
+import asyncio
+import time
+# Replace with your actual bot token and chat ID
+TELEGRAM_BOT_TOKEN = '8165232353:AAGKmuB_vMNX4b8Ik0FBeyA1Q_HeBrELaPI'
+CHAT_ID = '6707018481'  # Replace with the actual chat ID
+bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 llm = OllamaLLM(model="llama3.1")
 
@@ -147,19 +156,35 @@ def ResponseAgent(inputText: str, chat_history: list) -> tuple[str, list]:
 
 # PIC: Davis
 def thirdPartyBlackBox(inputText: str = None, inputAudio=None) -> str:
-    """a blackbox that send user prompt (and possibly chat history) to third party (eg. psychiatrist / parent) and get textual response
+    if inputAudio:
+        # Save audio to a file
+        audio_file_path = "audio.mp3"  # Path to the audio file
+        print("Sending audio and transcription to psychiatrist via Telegram...")
 
-    Args:
-        inputText (str, optional): user prompt text
-        inputAudio (_type_, optional): user prompt audio (type to be identified)
+        # Use asyncio to send both the audio file and the transcription asynchronously
+        asyncio.run(send_audio_and_text_message(audio_file_path, inputText))
 
-    Returns:
-        str: response provided by third party user
-    """
-    response = "manual response"
+    else:
+        raise ValueError("InputAudio must be provided.")
+
+    # Simulate waiting for psychiatrist's response
+    time.sleep(5)  # Simulate a response time delay
+
+    # Placeholder for the simulated response from the psychiatrist
+    response = "Psychiatrist's response: Please elaborate on your thoughts."  # Placeholder response
 
     return response
+    
+async def send_audio_and_text_message(audio_file_path: str, text: str):
+    """Sends both an audio message and its transcription to the specified chat using the Telegram bot."""
+    # Send the transcription text first
+    await bot.send_message(chat_id=CHAT_ID, text=f"Transcription of audio: {text}")
+    print("Transcription text sent!")
 
+    # Then send the audio file
+    with open(audio_file_path, 'rb') as audio_file:
+        await bot.send_voice(chat_id=CHAT_ID, voice=audio_file)
+    print("Audio message sent!")
 
 def main():
     chat_history = list()
