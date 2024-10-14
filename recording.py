@@ -19,7 +19,7 @@ def callback(indata, frames, time, status):
 def record():
     try:
         samplerate = 16000
-        filename = tempfile.mktemp(prefix='audio', suffix='.wav', dir='')
+        filename = tempfile.mktemp(prefix='audio', suffix='.wav', dir='audio') #save audio files to audio directory
 
         # Make sure the file is opened before recording anything:
         with sf.SoundFile(filename, mode='x', samplerate=samplerate,
