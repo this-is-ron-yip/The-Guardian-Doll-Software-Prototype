@@ -9,6 +9,7 @@ import asyncio
 import time
 from SpeechToTextAgent import SpeechToTextAgent
 from TextToSpeechAgent import TextToSpeechAgent
+from recording import record
 # Replace with your actual bot token and chat ID
 TELEGRAM_BOT_TOKEN = '8165232353:AAGKmuB_vMNX4b8Ik0FBeyA1Q_HeBrELaPI'
 CHAT_ID = '6707018481'  # Replace with the actual chat ID
@@ -200,7 +201,7 @@ def main():
         raise ValueError()
     
     while True:
-        audio = ""
+        audio = record() #filename of recording, .wav file
         if is_danger:
             rawOutput = thirdPartyBlackBox(inputAudio=audio)
             is_danger = False
