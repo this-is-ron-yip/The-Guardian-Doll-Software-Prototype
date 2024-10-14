@@ -7,6 +7,8 @@ from telegram import Bot
 import os
 import asyncio
 import time
+from SpeechToTextAgent import SpeechToTextAgent
+from TextToSpeechAgent import TextToSpeechAgent
 # Replace with your actual bot token and chat ID
 TELEGRAM_BOT_TOKEN = '8165232353:AAGKmuB_vMNX4b8Ik0FBeyA1Q_HeBrELaPI'
 CHAT_ID = '6707018481'  # Replace with the actual chat ID
@@ -15,30 +17,30 @@ bot = Bot(token=TELEGRAM_BOT_TOKEN)
 llm = OllamaLLM(model="llama3.1")
 
 # PIC: Oscar
-def SpeechToTextAgent(audio, input_language: str) -> str:
-    """a function that listen to the user, and convert the speech to text
+# def SpeechToTextAgent(audio, input_language: str) -> str:
+#     """a function that listen to the user, and convert the speech to text
 
-    Args:
-        audio (_type_): user prompt audio (type to be identified)
-        input_language (str): "EN" for english, "YUE" for Cantonese, "CN" for Mandarin
+#     Args:
+#         audio (_type_): user prompt audio (type to be identified)
+#         input_language (str): "EN" for english, "YUE" for Cantonese, "CN" for Mandarin
 
-    Returns:
-        str: textual representation of the speech
-    """
+#     Returns:
+#         str: textual representation of the speech
+#     """
 
-    inputText = input("human: ")
-    return inputText
+#     inputText = input("human: ")
+#     return inputText
 
 
 # PIC: Oscar
-def TextToSpeechAgent(outputText: str, input_language: str) -> None:
-    """a function that say out the generated response
+# def TextToSpeechAgent(outputText: str, input_language: str) -> None:
+#     """a function that say out the generated response
 
-    Args:
-        outputText (str): textual representation of the expected output
-        input_language (str): "EN" for english, "YUE" for Cantonese, "CN" for Mandarin
-    """
-    return
+#     Args:
+#         outputText (str): textual representation of the expected output
+#         input_language (str): "EN" for english, "YUE" for Cantonese, "CN" for Mandarin
+#     """
+#     return
 
 
 # PIC: Ron
