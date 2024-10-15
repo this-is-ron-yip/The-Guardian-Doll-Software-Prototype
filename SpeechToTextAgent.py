@@ -10,7 +10,7 @@ def SpeechToTextAgent(audio: str) -> str:
     # or run on CPU with INT8
     whisper_model = WhisperModel(whisper_model_size, device="cpu", compute_type="int8")
     
-    file=audio+".mp3"
+    file=audio
     segments, info = whisper_model.transcribe(file,
         vad_filter=True,
         vad_parameters=dict(min_silence_duration_ms=3000),
