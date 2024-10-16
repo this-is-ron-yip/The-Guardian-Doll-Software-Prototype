@@ -16,3 +16,6 @@ In this project, we aim to develop a toy doll that is equipped with a microphone
   - Emotion recording function: monitor patients’ emotional changes daily (through textual content/tone/facial expressions) and provide statistical information for psychiatrists to monitor patients’ condition.
   - Triggering Topics Identification: study and identify words and topics that would trigger their emotions through daily conversations (i.e., what they like/hate).
   - Speech Training Assistant: teaching patients on different topics (e.g., maths/pronunciation).
+
+  # Flowchart
+  ![flowchart](flowChart.jpg)
