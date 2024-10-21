@@ -1,60 +1,20 @@
+from SpeechToTextAgent import SpeechToTextAgent
+from TextToSpeechAgent import TextToSpeechAgent
+from blackbox import thirdPartyBlackBox  # Handles sending text/audio to an external service
+from recording import record
 from langchain_ollama.llms import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
-from deep_translator import (GoogleTranslator)
-#Blackbox
-from telegram import Bot
+from deep_translator import GoogleTranslator
+import logging
 import os
-import asyncio
-import time
-from SpeechToTextAgent import SpeechToTextAgent
-from TextToSpeechAgent import TextToSpeechAgent
-from recording import record
-# Replace with your actual bot token and chat ID
-TELEGRAM_BOT_TOKEN = '8165232353:AAGKmuB_vMNX4b8Ik0FBeyA1Q_HeBrELaPI'
-CHAT_ID = '6707018481'  # Replace with the actual chat ID
-bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
+# Initialize the LLM model
 llm = OllamaLLM(model="llama3.1")
 
-# PIC: Oscar
-# def SpeechToTextAgent(audio, input_language: str) -> str:
-#     """a function that listen to the user, and convert the speech to text
-
-#     Args:
-#         audio (_type_): user prompt audio (type to be identified)
-#         input_language (str): "EN" for english, "YUE" for Cantonese, "CN" for Mandarin
-
-#     Returns:
-#         str: textual representation of the speech
-#     """
-
-#     inputText = input("human: ")
-#     return inputText
-
-
-# PIC: Oscar
-# def TextToSpeechAgent(outputText: str, input_language: str) -> None:
-#     """a function that say out the generated response
-
-#     Args:
-#         outputText (str): textual representation of the expected output
-#         input_language (str): "EN" for english, "YUE" for Cantonese, "CN" for Mandarin
-#     """
-#     return
-
-
-# PIC: Ron
+# Function to detect threats in the input text
 def ThreatDetectionAgent(text: str) -> bool:
-    """a function that detect whether the user has suicidal thoughts / experienced bullying / harrassment
-
-    Args:
-        text (str): user prompt
-
-    Returns:
-        bool: flag indicating if the user is facing any threat 
-    """
-    system_message = "You are a threat detector for individuals with intellectual disabilities or autism. If you receive user prompt that may directly or indirectly contain emotional distress, violence, sexual-content and self-harm implications, reply 'DANGER' only. otherwise respond 'SAFE' only. You do not have the third option. Categorize as DANGER for marginal case"
+    system_message = "You are a threat detector for individuals with intellectual disabilities or autism. If you receive a prompt that may directly or indirectly contain emotional distress, violence, sexual-content, and self-harm implications, reply 'DANGER' only. Otherwise, respond 'SAFE' only. Categorize as DANGER for marginal cases."
 
     prompt_template = ChatPromptTemplate.from_messages(
         [
@@ -64,40 +24,16 @@ def ThreatDetectionAgent(text: str) -> bool:
     )
     chain = prompt_template | llm
     response = chain.invoke(
-        input={"system_message": system_message, "text": f"'{text}'"})
+        input={"system_message": system_message, "text": f"'{text}'"}
+    )
     
-    print(f"threat: {response}")
     if "DANGER" in response:
         return True
     else:
-        system_message = "You are analysing the AI-generated response. If the response is a suicide prevention message, or mentioned about cannot create content related to harrassement, violence, danger or sexual-content, or about cannot engagereply 'DANGER' only, else reply 'SAFE' only"
+        return False
 
-        prompt_template = ChatPromptTemplate.from_messages(
-            [
-                ("system", "{system_message}"),
-                ("human", "{text}")
-            ]
-        )
-        chain = prompt_template | llm
-        response = chain.invoke(input={"system_message": system_message, "text": f"'{response}'"})
-        print(f"suicidal: {response}")
-        if "DANGER" in response:
-            return True
-    return False
-
-
-# PIC: Ron
+# Function to translate between languages
 def TranslatorAgent(text: str, input_language: str = "EN", output_language: str = "EN") -> str:
-    """a function that translate between Cantonese and English
-
-    Args:
-        text (str): target content
-        input_language (str): "EN" for english, "YUE" for Cantonese, "CN" for Mandarin
-        output_language (str): "EN" for english, "YUE" for Cantonese, "CN" for Mandarin
-
-    Returns:
-        str: translated text
-    """
     language_code = {"EN": "en", "YUE": "zh-CN", "CN": "zh-CN"}
 
     if input_language == "YUE":
@@ -109,12 +45,10 @@ def TranslatorAgent(text: str, input_language: str = "EN", output_language: str 
         )
         chain = prompt_template | llm
         text = chain.invoke({"text": text})
-        print("cantonese: " + text)
 
     text = GoogleTranslator(
         source=language_code[input_language], 
         target=language_code[output_language]).translate(text)
-
 
     if output_language == "YUE":
         prompt_template = ChatPromptTemplate.from_messages(
@@ -124,27 +58,15 @@ def TranslatorAgent(text: str, input_language: str = "EN", output_language: str 
             ]
         )
         chain = prompt_template | llm
-        print("cantonese before: " + text)
         text = chain.invoke({"text": text})
 
     return text
 
-
-# PIC: Ron
+# Function to handle bot responses
 def ResponseAgent(inputText: str, chat_history: list) -> tuple[str, list]:
-    """a function that send the user prompt to the GenAI, and pass the GenAI response out as string
-
-    Args:
-        inputText (str): user prompt
-        chat_history (list): updated chat_history
-
-    Returns:
-        tuple[str, list]: GenAI response, chat_history
-    """
-
     prompt_template = ChatPromptTemplate.from_messages(
         [
-            ("system", "You are a emotionaless Chatbot called Mike. You are talking to a child. Please use simple wordings and do not use contractions."),
+            ("system", "You are an emotionless chatbot called Mike. You are talking to a child. Please use simple wordings and do not use contractions."),
             MessagesPlaceholder(variable_name="chat_history"),
         ]
     )
@@ -155,71 +77,67 @@ def ResponseAgent(inputText: str, chat_history: list) -> tuple[str, list]:
     chat_history.append(AIMessage(content=response))
 
     return response, chat_history
-
-
-# PIC: Davis
-def thirdPartyBlackBox(inputText: str = None, inputAudio=None) -> str:
-    if inputAudio:
-        # Save audio to a file
-        audio_file_path = "audio.mp3"  # Path to the audio file
-        print("Sending audio and transcription to psychiatrist via Telegram...")
-
-        # Use asyncio to send both the audio file and the transcription asynchronously
-        asyncio.run(send_audio_and_text_message(audio_file_path, inputText))
-
-    else:
-        raise ValueError("InputAudio must be provided.")
-
-    # Simulate waiting for psychiatrist's response
-    time.sleep(5)  # Simulate a response time delay
-
-    # Placeholder for the simulated response from the psychiatrist
-    response = "Psychiatrist's response: Please elaborate on your thoughts."  # Placeholder response
-
-    return response
-    
-async def send_audio_and_text_message(audio_file_path: str, text: str):
-    """Sends both an audio message and its transcription to the specified chat using the Telegram bot."""
-    # Send the transcription text first
-    await bot.send_message(chat_id=CHAT_ID, text=f"Transcription of audio: {text}")
-    print("Transcription text sent!")
-
-    # Then send the audio file
-    with open(audio_file_path, 'rb') as audio_file:
-        await bot.send_voice(chat_id=CHAT_ID, voice=audio_file)
-    print("Audio message sent!")
-
 def main():
-    chat_history = list()
+    chat_history = []
     is_danger = False
     
+    # Select language
     print("Welcome to the program. Please select a language to start with: (1)English, (2)Cantonese, (3)Mandarin")
     print("歡迎嚟到呢個程式，請選擇語言：（1）英文，（2）廣東話，（3）普通話")
     print("欢迎来到这个程式，请选择语言：（1）英语，（2）广东话，（3）普通话")
     language = {'1': 'EN', '2': 'YUE', '3': 'CN'}.get(input(">> "))
+    
     if not language:
-        raise ValueError()
+        raise ValueError("Invalid language selection")
+    
+    # Store recorded responses
+    recorded_responses = []
+    output_list = thirdPartyBlackBox(inputText=None, inputAudio=None, output_list=None)
     
     while True:
-        audio = record() #filename of recording, .wav file
-        if is_danger:
-            rawOutput = thirdPartyBlackBox(inputAudio=audio)
-            is_danger = False
-        else:
-            rawInput = SpeechToTextAgent(audio)
-            translatedInput = TranslatorAgent(text=rawInput, input_language=language)
-            print("translated: " + translatedInput)
-            is_danger = ThreatDetectionAgent(translatedInput)
-            if is_danger:
-                rawOutput = thirdPartyBlackBox(inputText=translatedInput)
-            else:
-                rawOutput, chat_history = ResponseAgent(translatedInput, chat_history)
-            print("rawOutput: " + rawOutput)
-            translatedOutput = TranslatorAgent(text=rawOutput, output_language=language)
-        TextToSpeechAgent(translatedOutput, input_language=language)
-        print("assistant: " + translatedOutput)
-        print()
+        print("Recording your input... (press Ctrl+C to stop)")
+        audio = record()  # Record audio and return the filename
 
+        if is_danger:
+            # Send the recorded audio to the external service via thirdPartyBlackBox
+            output_list = thirdPartyBlackBox(inputText=None, inputAudio=audio, output_list=output_list)
+            raw_output = " ".join([response['content'] for response in output_list if response not in recorded_responses])
+            recorded_responses.extend(output_list)
+
+            if not raw_output:
+                raw_output = "Waiting for help..."
+            
+            translated_output = TranslatorAgent(text=raw_output, output_language=language)
+        else:
+            # Convert recorded audio to text
+            raw_input = SpeechToTextAgent(audio)  
+            
+            if raw_input == "":
+                print("No speech detected, please try again.")
+                continue  # Skip to the next iteration if transcription fails
+
+            # Translate the input text
+            translated_input = TranslatorAgent(text=raw_input, input_language=language)
+            print(f"Translated Input: {translated_input}")
+            
+            # Detect threats in the translated input
+            is_danger = ThreatDetectionAgent(translated_input)
+            
+            if is_danger:
+                # If danger is detected, notify through thirdPartyBlackBox
+                thirdPartyBlackBox(inputText=translated_input, inputAudio=audio)
+                raw_output = "Please wait a moment, I'm getting help"
+            else:
+                # Get response from chatbot
+                raw_output, chat_history = ResponseAgent(translated_input, chat_history)
+            
+            print(f"Raw Output: {raw_output}")
+            # Translate the response back to the selected language
+            translated_output = TranslatorAgent(text=raw_output, output_language=language)
+
+        # Convert the translated text back to speech
+        TextToSpeechAgent(translated_output, input_language=language)
+        print(f"Assistant: {translated_output}")
 
 if __name__ == "__main__":
     main()
