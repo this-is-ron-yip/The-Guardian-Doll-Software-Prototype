@@ -1,27 +1,30 @@
 from faster_whisper import WhisperModel
+import os
+
 def SpeechToTextAgent(audio: str) -> str:
-    
-    whisper_model_size = "small"  
-
-    # Run on GPU with FP16
-    # model = WhisperModel(model_size, device="cuda", compute_type="float16")
-    # or run on GPU with INT8
-    # model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
-    # or run on CPU with INT8
+    whisper_model_size = "small"  # Adjust model size based on performance needs
     whisper_model = WhisperModel(whisper_model_size, device="cpu", compute_type="int8")
-    
-    file=audio
-    segments, info = whisper_model.transcribe(file,
-        vad_filter=True,
-        vad_parameters=dict(min_silence_duration_ms=3000),
-    )
 
-    outputtext=""
+    output_text = ""
 
-    #print("Detected language '%s' with probability %f" % (info.language, info.language_probability))
+    try:
+        # Check if audio file exists
+        if not os.path.exists(audio):
+            raise FileNotFoundError(f"Audio file '{audio}' not found.")
 
-    for segment in segments:
-        #print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
-        outputtext+=segment.text
+        # Transcribe the audio using the Whisper model
+        segments, info = whisper_model.transcribe(
+            audio, vad_filter=True, vad_parameters=dict(min_silence_duration_ms=3000)
+        )
 
-    return outputtext
+        for segment in segments:
+            output_text += segment.text  # Accumulate transcribed text
+        
+        if output_text.strip() == "":
+            raise ValueError("No speech detected in the audio.")
+
+        return output_text
+
+    except Exception as e:
+        print(f"Error in SpeechToTextAgent: {str(e)}")
+        return ""
